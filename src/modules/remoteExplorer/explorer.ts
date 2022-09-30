@@ -9,6 +9,7 @@ import { toRemotePath } from '../../helper';
 import { REMOTE_SCHEME } from '../../constants';
 import { getFileService } from '../serviceManager';
 import RemoteTreeDataProvider, { ExplorerItem } from './treeDataProvider';
+import logger from '../../logger';
 
 export default class RemoteExplorer {
   private _explorerView: vscode.TreeView<ExplorerItem>;
@@ -54,11 +55,17 @@ export default class RemoteExplorer {
         remoteId: fileService.id,
       });
     }
+    // if (item && !item.isDirectory) {
+    //   const parent = this._treeDataProvider.getParent(item);
+    //   if (parent) item = parent;
+    //   logger.log('getParent', item);
+    // }
 
     this._treeDataProvider.refresh(item);
   }
 
   reveal(item: ExplorerItem): Thenable<void> {
+    logger.log('reveal', item);
     return item ? this._explorerView.reveal(item) : Promise.resolve();
   }
 
@@ -67,6 +74,7 @@ export default class RemoteExplorer {
   }
 
   private _refreshSelection() {
+    logger.log('_refreshSelection', ...this._explorerView.selection.map(s => s.resource.uri.toString()));
     if (this._explorerView.selection.length) {
       this._explorerView.selection.forEach(item => this.refresh(item));
     } else {

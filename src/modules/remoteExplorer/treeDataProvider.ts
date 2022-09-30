@@ -16,6 +16,7 @@ import {
 } from '../../constants';
 import { getAllFileService } from '../serviceManager';
 import { getExtensionSetting } from '../ext';
+import logger from "../../logger";
 
 type Id = number;
 
@@ -74,13 +75,17 @@ export default class RemoteTreeData
   readonly onDidChangeTreeData: vscode.Event<ExplorerItem> = this._onDidChangeFolder.event;
   readonly onDidChange: vscode.Event<vscode.Uri> = this._onDidChangeFile.event;
 
+  private _map: Map<vscode.Uri['query'], ExplorerItem>;
+
+
   // FIXME: refresh can't work for user created ExplorerItem
   async refresh(item?: ExplorerItem): Promise<any> {
+    logger.log('refresh', item);
     // refresh root
     if (!item) {
       // clear cache
       this._roots = null;
-      this._rootsMap = null;
+      this._rootsMap = null; 
 
       this._onDidChangeFolder.fire();
       return;
@@ -95,11 +100,17 @@ export default class RemoteTreeData
         .filter(i => !i.isDirectory)
         .forEach(i => this._onDidChangeFile.fire(makePreivewUrl(i.resource.uri)));
     } else {
+      const parent = this.getParent(item);
+      if (parent) {
+        this._onDidChangeFolder.fire(parent);
+        logger.log('parent', parent);
+      }
       this._onDidChangeFile.fire(makePreivewUrl(item.resource.uri));
     }
   }
 
   getTreeItem(item: ExplorerItem): vscode.TreeItem {
+    // logger.log('getTreeItem', item);
     const isRoot = (item as ExplorerRoot).explorerContext !== undefined;
     let customLabel;
     if (isRoot) {
@@ -108,6 +119,23 @@ export default class RemoteTreeData
     if (!customLabel) {
       customLabel = upath.basename(item.resource.fsPath);
     }
+    const treeItem: vscode.TreeItem = new vscode.TreeItem(
+      customLabel,
+      item.isDirectory ? vscode.TreeItemCollapsibleState.Collapsed : undefined
+    );
+    treeItem.resourceUri = item.resource.uri;
+    treeItem.contextValue = isRoot ? 'root' : item.isDirectory ? 'folder' : 'file';
+    treeItem.command = item.isDirectory
+    ? undefined
+    : {
+        command: getExtensionSetting().downloadWhenOpenInRemoteExplorer
+          ? COMMAND_REMOTEEXPLORER_EDITINLOCAL
+          : COMMAND_REMOTEEXPLORER_VIEW_CONTENT,
+        arguments: [item],
+        title: 'View Remote Resource',
+      };
+    // logger.log('getTreeItem return', treeItem);
+    return treeItem;
     return {
       label: customLabel,
       resourceUri: item.resource.uri,
@@ -126,6 +154,7 @@ export default class RemoteTreeData
   }
 
   async getChildren(item?: ExplorerItem): Promise<ExplorerItem[]> {
+    logger.log('getChildren', item);
     if (!item) {
       return this._getRoots();
     }
@@ -154,6 +183,24 @@ export default class RemoteTreeData
       .map(file => {
         const isDirectory = file.type === FileType.Directory;
 
+        const newResource = UResource.updateResource(item.resource, {
+          remotePath: file.fspath,
+        });
+        const mapItem = this._map.get(newResource.uri.query);
+        if (mapItem) {
+          return mapItem;
+        } else {
+          const newItem = {
+            resource: UResource.updateResource(item.resource, {
+              remotePath: file.fspath,
+            }),
+            isDirectory,
+          };
+          logger.log('getChildren set mapItem', newItem.resource.uri.query);
+          this._map.set(newItem.resource.uri.query, newItem);
+          return newItem;
+        }
+
         return {
           resource: UResource.updateResource(item.resource, {
             remotePath: file.fspath,
@@ -171,8 +218,32 @@ export default class RemoteTreeData
       throw new Error(`Can't find config for remote resource ${resourceUri}.`);
     }
 
+    logger.log('getParent', item.resource.fsPath, root.resource.fsPath);
     if (item.resource.fsPath === root.resource.fsPath) {
       return null;
+    }
+
+    const fspath = upath.dirname(item.resource.fsPath);
+    const newResource = UResource.updateResource(item.resource, {
+      remotePath: fspath,
+    });
+    const mapItem = this._map.get(newResource.uri.query);
+    if (mapItem) {
+      logger.log('getParent get mapItem', newResource.uri.query);
+      return mapItem;
+    } else {
+      logger.log('getParent no mapItem', newResource.uri.query);
+      return {
+        resource: UResource.makeResource({
+          remote: {
+            host: root.explorerContext.config.host,
+            port: root.explorerContext.config.port,
+          },
+          fsPath: fspath,
+          remoteId: root.explorerContext.id,
+        }),
+        isDirectory: true,
+      };
     }
 
     return {
@@ -222,6 +293,7 @@ export default class RemoteTreeData
 
     this._roots = [];
     this._rootsMap = new Map();
+    this._map = new Map();
     getAllFileService().forEach(fileService => {
       const config = fileService.getConfig();
       const id = fileService.id;
@@ -243,6 +315,7 @@ export default class RemoteTreeData
       };
       this._roots!.push(item);
       this._rootsMap!.set(id, item);
+      this._map.set(item.resource.uri.query, item);
     });
     return this._roots;
   }
