@@ -96,7 +96,7 @@ export default class RemoteTreeData
         .filter(i => !i.isDirectory)
         .forEach(i => this._onDidChangeFile.fire(makePreivewUrl(i.resource.uri)));
     } else {
-      const parent = this.getParent(item);
+      const parent = await this.getParent(item);
       if (parent) {
         this._onDidChangeFolder.fire(parent);
       }
@@ -179,7 +179,7 @@ export default class RemoteTreeData
       .sort(dirFirstSort);
   }
 
-  getParent(item: ExplorerChild): ExplorerItem | null {
+  async getParent(item: ExplorerChild): Promise<ExplorerItem> {
     const resourceUri = item.resource.uri;
     const root = this.findRoot(resourceUri);
     if (!root) {
@@ -187,7 +187,7 @@ export default class RemoteTreeData
     }
 
     if (item.resource.fsPath === root.resource.fsPath) {
-      return null;
+      return root;
     }
 
     const fspath = upath.dirname(item.resource.fsPath);
@@ -198,17 +198,13 @@ export default class RemoteTreeData
     if (mapItem) {
       return mapItem;
     } else {
-      return {
-        resource: UResource.makeResource({
-          remote: {
-            host: root.explorerContext.config.host,
-            port: root.explorerContext.config.port,
-          },
-          fsPath: fspath,
-          remoteId: root.explorerContext.id,
-        }),
+      const newMapItem = {
+        resource: newResource,
         isDirectory: true,
       };
+      this._map.set(newResource.uri.query, newMapItem);
+      await this.getChildren(newMapItem);
+      return newMapItem;
     }
   }
 
