@@ -584,7 +584,7 @@
     "@types/jest": "^23.3.5",
     "@types/lru-cache": "^4.1.1",
     "@types/node": "^8.10.51",
-    "@types/vscode": "1.30",
+    "@types/vscode": "1.42",
     "@types/webpack-env": "^1.13.6",
     "braces": ">=2.3.1",
     "glob-parent": ">=5.1.2",
