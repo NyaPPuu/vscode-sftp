@@ -105,7 +105,7 @@ export default class RemoteTreeData
     let customIcon;
     if (isRoot) {
       customLabel = (item as ExplorerRoot).explorerContext.fileService.name;
-      customIcon = new vscode.ThemeIcon('root-folder');
+      customIcon = new vscode.ThemeIcon('vm');
     }
     if (!customLabel) {
       customLabel = upath.basename(item.resource.fsPath);
