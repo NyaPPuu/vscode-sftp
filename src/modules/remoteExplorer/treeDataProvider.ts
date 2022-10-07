@@ -16,6 +16,7 @@ import {
 } from '../../constants';
 import { getAllFileService } from '../serviceManager';
 import { getExtensionSetting } from '../ext';
+import logger from "../../logger";
 
 type Id = number;
 
@@ -240,6 +241,17 @@ export default class RemoteTreeData
     showTextDocument(makePreivewUrl(item.resource.uri));
   }
 
+  getRootByName(name: string): ExplorerRoot | null {
+    if (this._roots) {
+      for (const r of this._roots) {
+        logger.log('getRootByName', name, r.explorerContext.config.name);
+        if (r.explorerContext.config.name === name) return r;
+      }
+    }
+    logger.log('getRootByName failed');
+    return null;
+  }
+
   private _getRoots(): ExplorerRoot[] {
     if (this._roots) {
       return this._roots;
@@ -250,6 +262,7 @@ export default class RemoteTreeData
     this._map = new Map();
     getAllFileService().forEach(fileService => {
       const config = fileService.getConfig();
+      logger.log('getAllFileService foreach', config);
       const id = fileService.id;
       const item = {
         resource: UResource.makeResource({

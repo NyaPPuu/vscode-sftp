@@ -4,11 +4,12 @@ import {
   COMMAND_REMOTEEXPLORER_REFRESH,
   COMMAND_REMOTEEXPLORER_VIEW_CONTENT,
 } from '../../constants';
-import { UResource } from '../../core';
+import { UResource, upath } from '../../core';
 import { toRemotePath } from '../../helper';
 import { REMOTE_SCHEME } from '../../constants';
 import { getFileService } from '../serviceManager';
 import RemoteTreeDataProvider, { ExplorerItem } from './treeDataProvider';
+import logger from '../../logger';
 
 export default class RemoteExplorer {
   private _explorerView: vscode.TreeView<ExplorerItem>;
@@ -59,12 +60,35 @@ export default class RemoteExplorer {
   }
 
   reveal(item: ExplorerItem): Thenable<void> {
+    logger.log('reaveal', item);
     return item ? this._explorerView.reveal(item) : Promise.resolve();
+  }
+  pathReveal(path: string) {
+    logger.log('pathReveal', path);
+	  const dirs = path.split(upath.sep);
+    const name = dirs.shift();
+    if (name) {
+      logger.log('name', name);
+      const root = this._treeDataProvider.getRootByName(name);
+	  logger.log('root', root);
+      if (root) {
+		const fspath = upath.join(root.explorerContext.config.remotePath, ...dirs);
+		logger.log('ufspath', fspath);
+        return this.reveal({
+          resource: UResource.updateResource(root.resource, {
+            remotePath: fspath,
+          }),
+          isDirectory: false,
+        });
+      }
+    }
+	return;
   }
 
   findRoot(remoteUri: vscode.Uri) {
     return this._treeDataProvider.findRoot(remoteUri);
   }
+
 
   private _refreshSelection() {
     if (this._explorerView.selection.length) {

@@ -10,6 +10,9 @@ import { tryLoadConfigs } from './modules/config';
 import { getAllFileService, createFileService, disposeFileService } from './modules/serviceManager';
 import { getWorkspaceFolders, setContextValue } from './host';
 import RemoteExplorer from './modules/remoteExplorer';
+import { getExtensionSetting } from './modules/ext';
+import logger from "./logger";
+const extSetting = getExtensionSetting();
 
 async function setupWorkspaceFolder(dir) {
   const configs = await tryLoadConfigs(dir);
@@ -56,6 +59,18 @@ export async function activate(context: vscode.ExtensionContext) {
     app.remoteExplorer = new RemoteExplorer(context);
   } catch (error) {
     reportError(error);
+  }
+
+  if (extSetting.url) {
+    vscode.window.registerUriHandler({
+      handleUri: (uri: vscode.Uri) => {
+        logger.log('handleUri', uri, uri.path);
+        const path = uri.path.substring(1);
+        // logger.log('reveal', app.remoteExplorer.reveal(new vscode.Uri(path)));
+        app.remoteExplorer.pathReveal(path);
+        return;
+      },
+    });
   }
 }
 

@@ -5,6 +5,7 @@ import { getAllFileService } from '../modules/serviceManager';
 import { ExplorerItem } from '../modules/remoteExplorer';
 import { getActiveTextEditor } from '../host';
 import { listFiles, toLocalPath, simplifyPath } from '../helper';
+import logger from "../logger";
 
 function configIngoreFilterCreator(config) {
   if (!config || !config.ignore) {
@@ -117,6 +118,7 @@ export function getActiveFolder() {
 
 // selected file or activeTarget or configContext
 export function uriFromExplorerContextOrEditorContext(item, items): undefined | Uri | Uri[] {
+  logger.log('uriFromExplorerContextOrEditorContext', item, items);
   // from explorer or editor context
   if (item instanceof Uri) {
     if (Array.isArray(items) && items[0] instanceof Uri) {
