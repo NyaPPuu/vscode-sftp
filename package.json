@@ -577,7 +577,8 @@
     "dev": "webpack --mode development --watch",
     "test": "jest",
     "package": "vsce package",
-    "pub:debug": "rm -rf _debug && mkdir _debug && vsce package --out _debug/sftp-debug.vsix && cd _debug && git init && git commit --allow-empty -m 'update debug package' && git checkout -b debug-pacakge && cp ../INSTALL_DEBUG.md README.md  && git add . && git commit -am 'update debug package' && git push git@github.com:Natizyskunk/vscode-sftp.git debug-pacakge --force"
+    "pub:debug": "rd /s /q _debug>nul 2>&1|echo.>nul && mkdir _debug && vsce package --out _debug/sftp-debug.vsix && cd _debug && git init && git commit --allow-empty -m \"update debug package\" && git checkout -b debug-package && copy ..\\INSTALL_DEBUG.md README.md && git add . && git commit -am \"update debug package\" && git push git@github.com:NyaPPuu/vscode-sftp.git debug-package --force",
+	"ttt": "cd _debug && copy ..\\INSTALL_DEBUG.md README.md"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
