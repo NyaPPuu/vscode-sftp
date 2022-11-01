@@ -1,25 +1,19 @@
 import * as path from 'path';
 import { diffFiles } from '../host';
-import { EXTENSION_NAME } from '../constants';
-import { fileOperations } from '../core';
-import { makeTmpFile } from '../helper';
+import { upath } from '../core';
 import createFileHandler from './createFileHandler';
+import * as vscode from 'vscode';
 
 export const diff = createFileHandler({
   name: 'diff',
   async handle() {
-    const remoteFs = await this.fileService.getRemoteFileSystem(this.config);
-    const localFs = this.fileService.getLocalFileSystem();
-    const { localFsPath, remoteFsPath } = this.target;
-    const tmpPath = await makeTmpFile({
-      prefix: `${EXTENSION_NAME}-`,
-      postfix: path.extname(localFsPath),
+    const localFsPath = this.target.localFsPath;
+    const tmpUri = this.target.remoteUri.with({
+      path: '/~ ' + upath.basename(this.target.remoteUri.path),
     });
-
-    await fileOperations.transferFile(remoteFsPath, tmpPath, remoteFs, localFs);
     await diffFiles(
-      tmpPath,
-      localFsPath,
+      tmpUri,
+      vscode.Uri.file(localFsPath),
       `${path.basename(localFsPath)} (${this.fileService.name || 'remote'} ↔ local)`
     );
   },
