@@ -361,6 +361,7 @@ function mergeProfile(
 enum Event {
   BEFORE_TRANSFER = 'BEFORE_TRANSFER',
   AFTER_TRANSFER = 'AFTER_TRANSFER',
+  PROGRESS_TRANSFER = 'PROGRESS_TRANSFER',
 }
 
 let id = 0;
@@ -449,6 +450,10 @@ export default class FileService {
     this._eventEmitter.on(Event.AFTER_TRANSFER, listener);
   }
 
+  progressTransfer(listener: (task: TransferTask) => void) {
+    this._eventEmitter.on(Event.PROGRESS_TRANSFER, listener);
+  }
+
   createTransferScheduler(concurrency): TransferScheduler {
     const fileService = this;
     const scheduler = new Scheduler({
@@ -463,6 +468,10 @@ export default class FileService {
       this._pendingTransferTasks.delete(task as TransferTask);
       this._eventEmitter.emit(Event.AFTER_TRANSFER, err, task);
     });
+	scheduler.onTaskDone((err, task) => {
+		this._pendingTransferTasks.delete(task as TransferTask);
+		this._eventEmitter.emit(Event.AFTER_TRANSFER, err, task);
+	  });
 
     let runningPromise: Promise<void> | null = null;
     let isStopped: boolean = false;

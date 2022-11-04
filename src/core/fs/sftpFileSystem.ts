@@ -7,6 +7,7 @@ import FileSystem, {
 } from './fileSystem';
 import RemoteFileSystem from './remoteFileSystem';
 import { SSHClient } from '../remote-client';
+import logger from "../../logger";
 
 type FileHandle = Buffer;
 
@@ -389,6 +390,9 @@ export default class SFTPFileSystem extends RemoteFileSystem {
       const writer: WriteStream = this.sftp.createWriteStream(path, option);
       writer.once('error', reject).once('finish', resolve); // transffered
 
+      input.on('data', chunk => {
+        logger.log('sftpFileSystem input on data', chunk);
+      });
       input.once('error', err => {
         reject(err);
         writer.end();

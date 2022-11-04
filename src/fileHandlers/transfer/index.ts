@@ -1,6 +1,7 @@
 import { refreshRemoteExplorer } from '../shared';
 import createFileHandler, { FileHandlerContext } from '../createFileHandler';
 import { transfer, sync, TransferOption, SyncOption, TransferDirection } from './transfer';
+import logger from "../../logger";
 
 function createTransferHandle(direction: TransferDirection) {
   return async function handle(this: FileHandlerContext, option) {
@@ -29,8 +30,10 @@ function createTransferHandle(direction: TransferDirection) {
         transferDirection: TransferDirection.LOCAL_TO_REMOTE,
       };
     }
+    logger.log('transferConfig', localFsPath);
     // todo: abort at here. we should stop collect task
     await transfer(transferConfig, t => scheduler.add(t));
+    logger.log('scheduler', scheduler.size);
     await scheduler.run();
   };
 }

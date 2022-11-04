@@ -73,6 +73,7 @@ class PriorityQueue<T> implements Queue<T> {
 
 const EVENT_TASK_START = 'task.start';
 const EVENT_TASK_DONE = 'task.done';
+const EVENT_TASK_PROGRESS = 'task.progress';
 const EVENT_IDLE = 'idle';
 
 class Scheduler {
@@ -150,6 +151,10 @@ class Scheduler {
 
   onTaskDone(listener: (err: Error | null, task: Task) => void) {
     this._eventEmitter.on(EVENT_TASK_DONE, listener);
+  }
+
+  onTaskProgress(listener: (task: Task) => void) {
+    this._eventEmitter.on(EVENT_TASK_PROGRESS, listener);
   }
 
   onIdle(listener: () => void) {

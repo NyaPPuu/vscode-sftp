@@ -3,6 +3,7 @@ import * as fileOperations from './fileBaseOperations';
 import { FileSystem, FileType } from './fs';
 import { Task } from './scheduler';
 import logger from '../logger';
+import { window, ProgressLocation } from "vscode";
 
 let hasWarnedModifedTimePermission = false;
 
@@ -165,6 +166,34 @@ export default class TransferTask implements Task {
         targetFs.open(uploadTarget, 'w'),
       ]);
     }
+
+    window.withProgress({
+      location: ProgressLocation.Notification,
+      title: 'I am long running!',
+      cancellable: true,
+    }, (progress, token) => {
+      return new Promise<void>(async (resolve, reject) => {
+        const size = await (await srcFs.lstat(src)).size;
+        let currentSize = 0;
+        token.onCancellationRequested(() => {
+          logger.log('User canceled the long running operation');
+          this.cancel();
+          reject();
+        });
+
+        this._handle.on('close', () => {
+          window.showInformationMessage('done');
+          reject();
+        });
+
+        this._handle.on('data', chunk => {
+          currentSize += chunk.length;
+          const per = (currentSize / size * 100);
+          logger.log('A transferTask _handle on data', currentSize, size, per.toFixed(2));
+          progress.report({ increment: chunk.length / size * 100, message: `transfer... ${per.toFixed(2)}%` });
+        });
+      });
+    });
 
     try {
       if (useTempFile) {
