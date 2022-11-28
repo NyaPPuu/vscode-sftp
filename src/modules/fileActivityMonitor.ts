@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import logger from '../logger';
 import app from '../app';
 import StatusBarItem from '../ui/statusBarItem';
-import { onDidOpenTextDocument, onDidSaveTextDocument, showConfirmMessage } from '../host';
+import { onDidOpenTextDocument, onDidChangeTextDocument, onDidSaveTextDocument, showConfirmMessage } from '../host';
 import { readConfigsFromFile } from './config';
 import {
   createFileService,
@@ -12,6 +12,7 @@ import {
 } from './serviceManager';
 import { reportError, isValidFile, isConfigFile, isInWorkspace } from '../helper';
 import { downloadFile, uploadFile } from '../fileHandlers';
+import { diffRemote } from '../core/fileBaseOperations';
 
 let workspaceWatcher: vscode.Disposable;
 
@@ -91,6 +92,13 @@ function watchWorkspace({
     workspaceWatcher.dispose();
   }
 
+  const changedFsPath: string[] = [];
+
+  onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+    const uri = event.document.uri;
+    diffRemote(uri.fsPath, )
+  });
+
   workspaceWatcher = onDidSaveTextDocument((doc: vscode.TextDocument) => {
     const uri = doc.uri;
     if (!isValidFile(uri) || !isInWorkspace(uri.fsPath)) {
@@ -112,6 +120,7 @@ function watchWorkspace({
 }
 
 function init() {
+  logger.log('fileActivityMonitor init');
   onDidOpenTextDocument((doc: vscode.TextDocument) => {
     if (!isValidFile(doc.uri) || !isInWorkspace(doc.uri.fsPath)) {
       return;

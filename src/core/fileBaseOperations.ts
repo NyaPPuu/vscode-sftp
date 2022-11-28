@@ -1,7 +1,11 @@
+import * as path from 'path';
 import { FileSystem } from './fs';
 import { window } from 'vscode';
 import { Readable } from 'stream';
 import logger from '../logger';
+import { makeTmpFile } from '../helper';
+import { EXTENSION_NAME } from '../constants';
+import { fileOperations } from '.';
 
 interface FileOption {
   mode?: number;
@@ -67,4 +71,28 @@ export async function createFile(path: string, fs: FileSystem, option): Promise<
   s._read = () => { };
   s.push(null);
   return fs.put(s, path, { fd: targetFd });
+}
+
+export async function diffRemote(
+  localFsPath: string,
+  remoteFsPath: string,
+  localFs: FileSystem,
+  remoteFs: FileSystem
+) {
+  try {
+    const tmpPath = await makeTmpFile({
+      prefix: `${EXTENSION_NAME}-`,
+      postfix: path.extname(localFsPath),
+    });
+
+    await fileOperations.transferFile(remoteFsPath, tmpPath, remoteFs, localFs);
+
+    const localContent = await (await localFs.readFile(localFsPath)).toString();
+    const remoteContent = await (await remoteFs.readFile(remoteFsPath)).toString();
+    logger.log('localContent', localContent);
+    logger.log('remoteContent', remoteContent);
+    logger.log('isSame', localContent === remoteContent);
+  } catch (error) {
+    logger.error('error', error);
+  }
 }

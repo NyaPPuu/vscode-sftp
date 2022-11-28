@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { EXTENSION_NAME } from './constants';
 
-export function getOpenTextDocuments(): vscode.TextDocument[] {
+export function getOpenTextDocuments(): readonly vscode.TextDocument[] {
   return vscode.workspace.textDocuments;
 }
 
@@ -12,6 +12,13 @@ export function getUserSetting(section: string, resource?: vscode.Uri | null | u
 export function executeCommand(command: string, ...rest: any[]): Thenable<any> {
   return vscode.commands.executeCommand(command, ...rest);
 }
+
+export function onDidChangeTextDocument(
+	listener: (e: vscode.TextDocumentChangeEvent) => any,
+	thisArgs?: any
+  ) {
+	return vscode.workspace.onDidChangeTextDocument(listener, thisArgs);
+  }
 
 export function onWillSaveTextDocument(
   listener: (e: vscode.TextDocumentWillSaveEvent) => any,

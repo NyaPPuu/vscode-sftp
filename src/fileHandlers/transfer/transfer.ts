@@ -154,11 +154,14 @@ async function transferWithType(
       if (config.transferDirection === TransferDirection.LOCAL_TO_REMOTE) {
         const textDocuments = getOpenTextDocuments();
         const document = textDocuments.find(doc => doc.fileName === config.srcFsPath);
+        const srcStat = await config.srcFs.lstat(config.srcFsPath);
+        const targetStat = await config.targetFs.lstat(config.targetFsPath);
+        logger.log('srcStat', srcStat);
+        logger.log('targetStat', targetStat);
         if (document && !document.isClosed && document.isDirty) {
           await document.save();
           // Update mtime after file was saved
-          const stat = await config.srcFs.lstat(config.srcFsPath);
-          config.transferOption.mtime = stat.mtime;
+          config.transferOption.mtime = srcStat.mtime;
           logger.info('save before upload.');
         }
       }
