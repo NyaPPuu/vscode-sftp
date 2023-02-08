@@ -45,7 +45,7 @@ async function handleFileSave(uri: vscode.Uri) {
   }
 
   const config = fileService.getConfig();
-  if (config.uploadOnSave) {
+  if (config.uploadOnSave) { 
     const fspath = await realpathSync.native(uri.fsPath);
     uri = vscode.Uri.file(fspath);
     logger.info(`[file-save] ${fspath}`);
